@@ -149,12 +149,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         color: _textPrimary,
                       ),
                     ),
-                    Text(
-                      widget.userName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2563EB), // Blue
+                    Flexible(
+                      child: Text(
+                        widget.userName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2563EB), // Blue
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -175,40 +178,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
           Row(
             children: [
-              // Language toggle FR/EN
-              GestureDetector(
-                onTap: () {
-                  setState(() => _language = _language == 'fr' ? 'en' : 'fr');
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _isDarkMode
-                        ? const Color(0xFF2A2D37)
-                        : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _language == 'fr' ? '🇫🇷' : '🇬🇧',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _language == 'fr' ? 'FR' : 'EN',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2563EB),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               // Dark/Light mode toggle
               GestureDetector(
                 onTap: () {
@@ -743,20 +712,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ];
 
     return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       decoration: BoxDecoration(
         color: _cardColor,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (index) {
@@ -765,13 +735,24 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 onTap: () => setState(() => _selectedNavIndex = index),
                 behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  transform: Matrix4.translationValues(0.0, isActive ? -6.0 : 0.0, 0.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFF2563EB).withOpacity(0.1)
+                        ? const Color(0xFF2563EB)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF2563EB).withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -781,7 +762,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             ? items[index]['activeIcon'] as IconData
                             : items[index]['icon'] as IconData,
                         color: isActive
-                            ? const Color(0xFF2563EB)
+                            ? Colors.white
                             : _textSecondary,
                         size: 24,
                       ),
@@ -792,7 +773,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           fontSize: 10,
                           fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                           color: isActive
-                              ? const Color(0xFF2563EB)
+                              ? Colors.white
                               : _textSecondary,
                         ),
                       ),
