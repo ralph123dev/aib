@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../home/pages/home_page.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -143,11 +144,23 @@ class _AuthPageState extends State<AuthPage>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+    // Navigate to HomePage
+    final userName = _isSignUp
+        ? _prenomController.text.trim()
+        : _emailController.text.split('@').first;
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(userName: userName.isNotEmpty ? userName : 'Utilisateur'),
+        ),
+        (route) => false,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final texts = _getTexts();
 
     return Scaffold(
