@@ -1,11 +1,14 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'features/welcome/pages/welcome_page.dart';
+import 'firebase_options.dart';
 
-void main() {
-  initializeDateFormatting('fr_FR', null).then((_) {
-    runApp(const MyApp());
-  });
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: kFirebaseOptions);
+  await initializeDateFormatting('fr_FR', null);
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

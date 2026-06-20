@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../home/pages/home_page.dart';
@@ -132,31 +134,130 @@ class _AuthPageState extends State<AuthPage>
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    if (!mounted) return;
     final texts = _getTexts();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isSignUp ? texts['successCreate']! : texts['successSignIn']!),
-        backgroundColor: const Color(0xFF4FA3D1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-    // Navigate to HomePage
-    final userName = _isSignUp
-        ? _prenomController.text.trim()
-        : _emailController.text.split('@').first;
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(userName: userName.isNotEmpty ? userName : 'Utilisateur'),
+    try {
+      if (_isSignUp) {
+        final email = _emailController.text.trim();
+        final password = _passwordController.text;
+        final firstName = _prenomController.text.trim();
+        final lastName = _nomController.text.trim();
+        final phone = _telController.text.trim();
+
+        final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        final user = userCredential.user;
+        if (user != null) {
+          try {
+            await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+              'uid': user.uid,
+              'firstName': firstName,
+              'lastName': lastName,
+              'email': email,
+              'phone': phone,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+            debugPrint('User document created: ${user.uid}');
+          } on FirebaseException catch (firestoreError) {
+            if (user != null) {
+              await user.delete();
+            }
+            final message = _language == 'fr'
+                ? 'Impossible d\'enregistrer le profil : ${firestoreError.message}'
+                : 'Unable to save profile: ${firestoreError.message}';
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  backgroundColor: const Color(0xFFFF5C5C),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            }
+            return;
+          }
+          await user.updateDisplayName('$firstName $lastName');
+        }
+      } else {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isSignUp ? texts['successCreate']! : texts['successSignIn']!),
+          backgroundColor: const Color(0xFF4FA3D1),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        (route) => false,
       );
+      final userName = _isSignUp
+          ? _prenomController.text.trim()
+          : _emailController.text.split('@').first;
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(userName: userName.isNotEmpty ? userName : 'Utilisateur'),
+          ),
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (error) {
+      final message = _firebaseErrorMessage(error.code, texts);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: const Color(0xFFFF5C5C),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_language == 'fr'
+                ? 'Une erreur est survenue. Réessayez.'
+                : 'An error occurred. Please try again.'),
+            backgroundColor: const Color(0xFFFF5C5C),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  String _firebaseErrorMessage(String code, Map<String, String> texts) {
+    return switch (code) {
+      'email-already-in-use' => _language == 'fr'
+          ? 'Cet email est déjà utilisé.'
+          : 'This email is already in use.',
+      'invalid-email' => texts['invalidEmail']!,
+      'weak-password' => _language == 'fr'
+          ? 'Le mot de passe est trop faible.'
+          : 'The password is too weak.',
+      'wrong-password' => _language == 'fr'
+          ? 'Mot de passe incorrect.'
+          : 'Wrong password.',
+      'user-not-found' => _language == 'fr'
+          ? 'Utilisateur introuvable.'
+          : 'User not found.',
+      _ => _language == 'fr'
+          ? 'Une erreur est survenue, réessayez.'
+          : 'An error occurred, please try again.',
+    };
   }
 
   @override
