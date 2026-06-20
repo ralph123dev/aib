@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'encaisser_page.dart';
+import 'finance_page.dart';
+import 'profil_page.dart';
 
 class HomePage extends StatefulWidget {
   final String userName;
@@ -95,9 +98,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: _bgColor,
       body: SafeArea(
-        child: _selectedNavIndex == 0
-            ? _buildHomePage(formattedDate)
-            : _buildPlaceholderPage(_getNavLabel(_selectedNavIndex)),
+        child: _buildCurrentPage(formattedDate),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -726,58 +727,64 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(items.length, (index) {
               final isActive = _selectedNavIndex == index;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedNavIndex = index),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  transform: Matrix4.translationValues(0.0, isActive ? -6.0 : 0.0, 0.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? const Color(0xFF2563EB)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: isActive
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFF2563EB).withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isActive
-                            ? items[index]['activeIcon'] as IconData
-                            : items[index]['icon'] as IconData,
-                        color: isActive
-                            ? Colors.white
-                            : _textSecondary,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        items[index]['label'] as String,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedNavIndex = index),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    transform: Matrix4.translationValues(0.0, isActive ? -6.0 : 0.0, 0.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFF2563EB)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: isActive
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF2563EB).withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isActive
+                              ? items[index]['activeIcon'] as IconData
+                              : items[index]['icon'] as IconData,
                           color: isActive
                               ? Colors.white
                               : _textSecondary,
+                          size: 24,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          items[index]['label'] as String,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                            color: isActive
+                                ? Colors.white
+                                : _textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -788,9 +795,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  String _getNavLabel(int index) {
-    const labels = ['Accueil', 'Encaisser', 'Finances', 'Historique', 'Profil'];
-    return labels[index];
+  Widget _buildCurrentPage(String formattedDate) {
+    switch (_selectedNavIndex) {
+      case 0:
+        return _buildHomePage(formattedDate);
+      case 1:
+        return EncaisserPage(
+          userName: widget.userName,
+          isDarkMode: _isDarkMode,
+        );
+      case 2:
+        return FinancePage(isDarkMode: _isDarkMode);
+      case 3:
+        return _buildPlaceholderPage('Historique');
+      case 4:
+        return ProfilPage(
+          userName: widget.userName,
+          isDarkMode: _isDarkMode,
+        );
+      default:
+        return _buildHomePage(formattedDate);
+    }
   }
 
   Widget _buildPlaceholderPage(String title) {
