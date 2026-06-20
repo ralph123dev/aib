@@ -570,3 +570,8 @@ class _DashedBorderPainter extends CustomPainter {
       borderRadius != oldDelegate.borderRadius ||
       strokeWidth != oldDelegate.strokeWidth;
 }
+//Développer par Ralph Dev 
+//ralphurgue@gmail.com
+//Watshapp: +237689476780 
+//Telegram: +237677968494 
+//portfolio: https://ralphdeveloppeur.vercel.app
