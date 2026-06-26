@@ -143,42 +143,71 @@ class _AuthPageState extends State<AuthPage>
         final lastName = _nomController.text.trim();
         final phone = _telController.text.trim();
 
-        final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        final user = userCredential.user;
-        if (user != null) {
-          try {
-            await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-              'uid': user.uid,
-              'firstName': firstName,
-              'lastName': lastName,
-              'email': email,
-              'phone': phone,
-              'createdAt': FieldValue.serverTimestamp(),
-            });
-            debugPrint('User document created: ${user.uid}');
-          } on FirebaseException catch (firestoreError) {
-            if (user != null) {
-              await user.delete();
+        try {
+          final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          final user = userCredential.user;
+          if (user != null) {
+            try {
+              await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+                'uid': user.uid,
+                'firstName': firstName,
+                'lastName': lastName,
+                'email': email,
+                'phone': phone,
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+              debugPrint('User document created: ${user.uid}');
+            } on FirebaseException catch (firestoreError) {
+              final message = _language == 'fr'
+                  ? 'Erreur lors de l\'enregistrement du profil, mais vous êtes connecté.'
+                  : 'Error saving profile, but you are signed in.';
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                    backgroundColor: const Color(0xFFFFA500),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              }
+              debugPrint('Firestore save failed for user ${user.uid}: ${firestoreError.message}');
             }
-            final message = _language == 'fr'
-                ? 'Impossible d\'enregistrer le profil : ${firestoreError.message}'
-                : 'Unable to save profile: ${firestoreError.message}';
+            await user.updateDisplayName('$firstName $lastName');
+          }
+        } on FirebaseAuthException catch (signUpError) {
+          if (signUpError.code == 'email-already-in-use') {
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_language == 'fr'
+                    ? 'Compte existant détecté. Connexion en cours...'
+                    : 'Existing account detected. Signing in...'),
+                backgroundColor: const Color(0xFF4FA3D1),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+            final userName = email.split('@').first;
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(message),
-                  backgroundColor: const Color(0xFFFF5C5C),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomePage(userName: userName.isNotEmpty ? userName : 'Utilisateur'),
                 ),
+                (route) => false,
               );
             }
             return;
           }
-          await user.updateDisplayName('$firstName $lastName');
+          rethrow;
         }
       } else {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
